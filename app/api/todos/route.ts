@@ -12,7 +12,11 @@ export async function GET() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const todos = await Todo.find({ userId: session.user.id });
+if (!session || !session.user || !session.user.id) {
+  return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+}
+
+const todos = await Todo.find({ userId: session.user.id });
   return NextResponse.json(todos);
 }
 
