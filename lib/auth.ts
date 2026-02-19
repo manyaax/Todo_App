@@ -13,20 +13,34 @@ export const authOptions: AuthOptions = {
         password: {},
       },
       async authorize(credentials) {
-        await connectDB();
+  await connectDB();
 
-        const user = await User.findOne({ email: credentials?.email });
-        if (!user) return null;
+  if (!credentials?.email || !credentials?.password) return null;
 
-        const match = await bcrypt.compare(credentials!.password, user.password);
-        if (!match) return null;
+  const email = credentials.email.trim().toLowerCase();
+  const password = credentials.password;
 
-        return {
-          id: user._id.toString(),
-          name: user.name,
-          email: user.email,
-        };
-      },
+  const user = await User.findOne({ email });
+
+  if (!user) {
+    console.log("USER NOT FOUND:", email);
+    return null;
+  }
+
+  const isValid = await bcrypt.compare(password, user.password);
+
+  if (!isValid) {
+    console.log("PASSWORD NOT MATCH");
+    return null;
+  }
+
+  return {
+    id: user._id.toString(),
+    name: user.name,
+    email: user.email,
+  };
+}
+
     }),
   ],
   session: { strategy: "jwt" },
