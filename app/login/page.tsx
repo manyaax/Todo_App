@@ -9,22 +9,23 @@ export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
-  const handleLogin = async (e: any) => {
-    e.preventDefault();
+ const handleLogin = async (e: any) => {
+  e.preventDefault();
 
-    const res = await signIn("credentials", {
-      email,
-      password,
-      redirect: false,
-    });
+  const res = await signIn("credentials", {
+    email: email.trim().toLowerCase(),
+    password: password,
+    redirect: false,
+    callbackUrl: "/dashboard",
+  });
 
-    if (res?.ok) {
-  window.location.href = "/dashboard";
-}
-else {
-      alert("Invalid credentials");
-    }
-  };
+  if (!res?.error) {
+    router.push("/dashboard");
+  } else {
+    alert("Invalid credentials");
+  }
+};
+
 
  return (
   <div
