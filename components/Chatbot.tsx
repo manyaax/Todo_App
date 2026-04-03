@@ -9,69 +9,72 @@ export default function Chatbot() {
   const [pendingTask, setPendingTask] = useState("");
 
   const sendMessage = async () => {
-  if (!message) return;
+    if (!message) return;
 
-  // 👉 If waiting for date
-  if (pendingTask) {
-    const res = await fetch("/api/chat", {
+    // 👉 If waiting for date
+    if (pendingTask) {
+      const response = await fetch("/api/chat", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          message,
+          task: pendingTask,
+          step: "date",
+        }),
+      });
+
+      const data = await response.json();
+
+      setChat((prev) => [...prev, "You: " + message, "Bot: " + data.reply]);
+      setPendingTask("");
+      setMessage("");
+      return;
+    }
+
+    // 👉 Normal message flow
+    const response = await fetch("/api/chat", {
       method: "POST",
-      body: JSON.stringify({
-        message,
-        task: pendingTask,
-        step: "date",
-      }),
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ message }),
     });
 
-    const data = await res.json();
+    let data;
+    try {
+      data = await response.json();
+    } catch {
+      data = { reply: "Server error ❌" };
+    }
+
+    // 👉 If bot asks for date
+    if (data.askDate) {
+      setPendingTask(data.task);
+    }
 
     setChat((prev) => [...prev, "You: " + message, "Bot: " + data.reply]);
-    setPendingTask("");
     setMessage("");
-    return;
-  }
-
-  const res = await fetch("/api/chat", {
-  method: "POST",
-  headers: {
-    "Content-Type": "application/json",   // ✅ ADD THIS
-  },
-  body: JSON.stringify({ message }),
-});
-
-const res = await fetch("/api/chat", {
-  method: "POST",
-  headers: {
-    "Content-Type": "application/json",   // ✅ ADD THIS
-  },
-  body: JSON.stringify({ message }),
-});
-
-  // 👉 If bot asks for date
-  if (data.askDate) {
-    setPendingTask(data.task);
-  }
-
-  setChat((prev) => [...prev, "You: " + message, "Bot: " + data.reply]);
-  setMessage("");
-};
+  };
 
   return (
     <>
       {/* Floating Button */}
       <button
-  onClick={() => setOpen(!open)}
-  style={{
-    position: "fixed",
-    bottom: "20px",
-    right: "20px",
-    background: "red",
-    color: "white",
-    padding: "12px",
-    zIndex: 9999,
-  }}
->
-  CHAT
-</button>
+        onClick={() => setOpen(!open)}
+        style={{
+          position: "fixed",
+          bottom: "20px",
+          right: "20px",
+          background: "red",
+          color: "white",
+          padding: "12px",
+          zIndex: 9999,
+        }}
+      >
+        CHAT
+      </button>
 
       {/* Chat Box */}
       {open && (
