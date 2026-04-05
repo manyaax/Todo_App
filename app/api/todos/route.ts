@@ -12,6 +12,9 @@ export async function GET() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  if(!session || !session.user){
+    return new Response("Unauthorized",{status:401});
+  }
   const todos = await Todo.find({ userId: session.user.id });
   return NextResponse.json(todos);
 }

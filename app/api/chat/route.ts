@@ -4,23 +4,31 @@ import Todo from "@/models/Todo";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 
-function parseDate(text: string) {
-  const lower = text.toLowerCase();
+// 🔥 STEP 2: helper functions
+function extractTask(message: string) {
+  let task = message
+    .replace(/add|create|task|todo|i want to|please/gi, "")
+    .replace(/today|tomorrow|\d{1,2}[\/-]\d{1,2}[\/-]\d{4}/gi, "")
+    .trim();
 
-  const today = new Date();
+  return task;
+}
+
+function extractDate(message: string) {
+  const lower = message.toLowerCase();
+
+  const date = new Date();
 
   if (lower.includes("today")) {
-    return today;
+    return date;
   }
 
   if (lower.includes("tomorrow")) {
-    const t = new Date();
-    t.setDate(t.getDate() + 1);
-    return t;
+    date.setDate(date.getDate() + 1);
+    return date;
   }
 
-  // dd-mm-yyyy or dd/mm/yyyy
-  const match = text.match(/(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})/);
+  const match = message.match(/(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})/);
   if (match) {
     const [_, d, m, y] = match;
     return new Date(`${y}-${m}-${d}`);
@@ -43,9 +51,9 @@ export async function POST(req: Request) {
 
     await connectDB();
 
-    // 🧠 STEP 2: user replying with date
+    // ✅ STEP 4: keep existing follow-up date logic
     if (step === "date" && task) {
-      let parsedDate = parseDate(message);
+      let parsedDate = extractDate(message);
 
       if (!parsedDate) {
         return NextResponse.json({
@@ -54,7 +62,7 @@ export async function POST(req: Request) {
       }
 
       const cleanDate = new Date(parsedDate);
-      cleanDate.setUTCHours(0, 0, 0, 0);
+      cleanDate.setHours(0, 0, 0, 0);
 
       await Todo.create({
         text: task,
@@ -67,20 +75,22 @@ export async function POST(req: Request) {
       });
     }
 
-    // 🧠 STEP 1: user sends full sentence
-    if (message.toLowerCase().includes("add")) {
-      let text = message.replace("add", "").trim();
+    // ✅ STEP 3: improved ADD logic
+    const lower = message.toLowerCase();
 
-      const parsedDate = parseDate(text);
+    if (
+      lower.includes("add") ||
+      lower.includes("create") ||
+      lower.includes("task")
+    ) {
+      const newTask = extractTask(message);
+      const parsedDate = extractDate(message);
 
-      // remove date words from task
-      text = text
-        .replace("today", "")
-        .replace("tomorrow", "")
-        .replace(/\d{1,2}[\/-]\d{1,2}[\/-]\d{4}/, "")
-        .trim();
-
-      const newTask = text;
+      if (!newTask) {
+        return NextResponse.json({
+          reply: "What task do you want to add? 🤔",
+        });
+      }
 
       // ❌ no date → ask user
       if (!parsedDate) {

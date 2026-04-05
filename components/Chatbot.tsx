@@ -28,6 +28,7 @@ export default function Chatbot() {
       const data = await response.json();
 
       setChat((prev) => [...prev, "You: " + message, "Bot: " + data.reply]);
+      window.location.reload();
       setPendingTask("");
       setMessage("");
       return;
