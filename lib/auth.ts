@@ -4,6 +4,27 @@ import bcrypt from "bcryptjs";
 import { connectDB } from "./mongodb";
 import User from "@/models/User";
 
+// ✅ Extend Session type
+declare module "next-auth" {
+  interface Session {
+    user: {
+      id: string;
+      name?: string | null;
+      email?: string | null;
+      image?: string | null;
+    };
+  }
+}
+
+// ✅ Extend JWT type
+declare module "next-auth/jwt" {
+  interface JWT {
+    id?: string;
+    name?: string | null;
+    email?: string | null;
+  }
+}
+
 export const authOptions: AuthOptions = {
   providers: [
     CredentialsProvider({
@@ -12,13 +33,19 @@ export const authOptions: AuthOptions = {
         email: {},
         password: {},
       },
+
       async authorize(credentials) {
         await connectDB();
 
-        const user = await User.findOne({ email: credentials?.email });
+        // ✅ Safety check
+        if (!credentials?.email || !credentials?.password) {
+          return null;
+        }
+
+        const user = await User.findOne({ email: credentials.email });
         if (!user) return null;
 
-        const match = await bcrypt.compare(credentials!.password, user.password);
+        const match = await bcrypt.compare(credentials.password, user.password);
         if (!match) return null;
 
         return {
@@ -29,25 +56,28 @@ export const authOptions: AuthOptions = {
       },
     }),
   ],
+
   session: { strategy: "jwt" },
-    callbacks: {
+
+  callbacks: {
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
-        token.name = user.name;     // ⭐ store name
-      token.email = user.email;   // ⭐ store email
+        token.name = user.name;
+        token.email = user.email;
       }
       return token;
     },
 
     async session({ session, token }) {
       if (session.user) {
-        session.user.id = token.id as string;
-        session.user.name = token.name as string;   // ⭐ send to frontend
-      session.user.email = token.email as string;
+        session.user.id = token.id ?? "";
+        session.user.name = token.name ?? null;
+        session.user.email = token.email ?? null;
       }
       return session;
     },
   },
+
   secret: process.env.NEXTAUTH_SECRET,
 };
