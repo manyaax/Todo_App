@@ -8,10 +8,30 @@ import { authOptions } from "@/lib/auth";
 function extractTask(message: string) {
   let task = message
     .replace(/add|create|task|todo|i want to|please/gi, "")
-    .replace(/today|tomorrow|\d{1,2}[\/-]\d{1,2}[\/-]\d{4}/gi, "")
+    .replace(/today|tomorrow/gi, "")
+    
+    // ❌ REMOVE TIME (important fix)
+    .replace(/\d{1,2}\s?(am|pm)/gi, "")   // 12pm, 9 am
+    .replace(/\d{1,2}:\d{2}/gi, "")       // 10:30
+    
+    .replace(/for|at/gi, "")              // remove extra words
     .trim();
 
   return task;
+}
+function extractTime(message: string) {
+  const match = message.match(/(\d{1,2})(:\d{2})?\s?(am|pm)/i);
+
+  if (!match) return null;
+
+  let hours = parseInt(match[1]);
+  let minutes = match[2] ? parseInt(match[2].slice(1)) : 0;
+  const period = match[3].toLowerCase();
+
+  if (period === "pm" && hours !== 12) hours += 12;
+  if (period === "am" && hours === 12) hours = 0;
+
+  return { hours, minutes };
 }
 
 function extractDate(message: string) {
@@ -69,6 +89,7 @@ export async function POST(req: Request) {
         date: cleanDate,
         userId: session.user?.email,
       });
+      console.log("TASK SAVED:", task, cleanDate, session.user?.email);
 
       return NextResponse.json({
         reply: `Task "${task}" added for ${cleanDate.toDateString()} ✅`,
@@ -102,13 +123,21 @@ export async function POST(req: Request) {
       }
 
       const cleanDate = new Date(parsedDate);
-      cleanDate.setHours(0, 0, 0, 0);
-
+      
+      const timeData = extractTime(message);
+console.log("TIME DETECTED:", timeData);
+      if (timeData) {
+          cleanDate.setHours(timeData.hours, timeData.minutes, 0, 0);
+      }else {
+  cleanDate.setHours(0, 0, 0, 0); // default only if no time
+}
+      
       await Todo.create({
-        text: newTask,
-        date: cleanDate,
-        userId: session.user?.email,
-      });
+  text: newTask,
+  date: cleanDate,
+  time: timeData ? `${timeData.hours}:${timeData.minutes}` : "",
+  userId: session.user?.email,
+});
 
       return NextResponse.json({
         reply: `Task "${newTask}" added for ${cleanDate.toDateString()} ✅`,

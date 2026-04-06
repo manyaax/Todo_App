@@ -27,8 +27,17 @@ export default function Chatbot() {
 
       const data = await response.json();
 
-      setChat((prev) => [...prev, "You: " + message, "Bot: " + data.reply]);
-      window.location.reload();
+      setChat((prev) => [
+        ...prev,
+        "You: " + message,
+        "Bot: " + data.reply,
+      ]);
+
+      // ✅ reload ONLY if task added
+      if (data.reply.includes("added")) {
+        window.location.reload();
+      }
+
       setPendingTask("");
       setMessage("");
       return;
@@ -55,7 +64,17 @@ export default function Chatbot() {
       setPendingTask(data.task);
     }
 
-    setChat((prev) => [...prev, "You: " + message, "Bot: " + data.reply]);
+    setChat((prev) => [
+      ...prev,
+      "You: " + message,
+      "Bot: " + data.reply,
+    ]);
+
+    // ✅ reload ONLY when task added
+    if (data.reply.includes("added")) {
+      window.location.reload();
+    }
+
     setMessage("");
   };
 

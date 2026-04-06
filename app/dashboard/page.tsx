@@ -19,7 +19,7 @@ export default function Page() {
   const [time, setTime] = useState('');
   const [list, setList] = useState<Todo[]>([]);
   const [editIndex, setEditIndex] = useState<number | null>(null);
-const [calendarKey, setCalendarKey] = useState(0);
+  const [calendarKey, setCalendarKey] = useState(0);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [showCalendar, setShowCalendar] = useState(false);
   useEffect(() => {
@@ -69,15 +69,32 @@ const fetchTodos = async () => {
   const day = String(date.getDate()).padStart(2, '0');
   return `${year}-${month}-${day}`;
 };
-const formatDateForDisplay = (dateStr: string) => {
-  const [year, month, day] = dateStr.split('-');
+const formatDateForDisplay = (dateStr?: string) => {
+  if (!dateStr) return "No date";
+
+  const d = new Date(dateStr);
+
+  if (isNaN(d.getTime())) return "No date";
+
+  const day = String(d.getDate()).padStart(2, "0");
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const year = d.getFullYear();
+
   return `${day}-${month}-${year}`;
 };
 const selectedDateStr = formatDate(selectedDate);
 
-const todosForSelectedDate = list.filter(
-  (todo) => !selectedDateStr || todo.date === selectedDateStr
-);
+const todosForSelectedDate = list.filter((todo) => {
+  const todoDate = new Date(todo.date);
+  const formatted =
+    todoDate.getFullYear() +
+    "-" +
+    String(todoDate.getMonth() + 1).padStart(2, "0") +
+    "-" +
+    String(todoDate.getDate()).padStart(2, "0");
+
+  return formatted === selectedDateStr;
+});
 
 
 const completedCount = todosForSelectedDate.filter(
@@ -320,9 +337,8 @@ const handleDelete = async (id: string) => {
         </span>
 
         <div style={styles.meta}>
-          📅 {formatDateForDisplay(item.date)}
-          {item.time && <> ⏰ {formatTime(item.time)}</>}
-        </div>
+          📅 {item.date ? formatDateForDisplay(item.date) : ""}
+{item.time && <> ⏰ {formatTime(item.time)}</>}        </div>
       </div>
     </div>
 
