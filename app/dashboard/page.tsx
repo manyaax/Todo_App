@@ -85,13 +85,14 @@ const formatDateForDisplay = (dateStr?: string) => {
 const selectedDateStr = formatDate(selectedDate);
 
 const todosForSelectedDate = list.filter((todo) => {
-  const todoDate = new Date(todo.date);
+  const d = new Date(todo.date);
+
   const formatted =
-    todoDate.getFullYear() +
+    d.getUTCFullYear() +
     "-" +
-    String(todoDate.getMonth() + 1).padStart(2, "0") +
+    String(d.getUTCMonth() + 1).padStart(2, "0") +
     "-" +
-    String(todoDate.getDate()).padStart(2, "0");
+    String(d.getUTCDate()).padStart(2, "0");
 
   return formatted === selectedDateStr;
 });
@@ -102,11 +103,21 @@ const completedCount = todosForSelectedDate.filter(
 ).length;
 const totalCount = todosForSelectedDate.length;
 
-const formatTime = (time: string) => {
-  const [hour, minute] = time.split(':').map(Number);
-  const ampm = hour >= 12 ? 'PM' : 'AM';
-  const h = hour % 12 || 12;
-  return `${h}:${minute.toString().padStart(2, '0')} ${ampm}`;
+const formatTime = (time?: string) => {
+  if (!time) return "";
+
+  const parts = time.split(":");
+  if (parts.length < 2) return "";
+
+  let hour = Number(parts[0]);
+  let minute = Number(parts[1]);
+
+  if (isNaN(hour) || isNaN(minute)) return "";
+
+  const ampm = hour >= 12 ? "PM" : "AM";
+  hour = hour % 12 || 12;
+
+  return `${hour}:${minute.toString().padStart(2, "0")} ${ampm}`;
 };
 const isOverdue = (item: Todo) => {
   const today = new Date();
@@ -305,7 +316,7 @@ const handleDelete = async (id: string) => {
 
         {/* TODO LIST */}
         <ul style={styles.list}>
-          {todosForSelectedDate.map((item, index) => (
+          {todosForSelectedDate?.map((item, index) => (
   <li
     key={index}
     style={{
@@ -338,7 +349,8 @@ const handleDelete = async (id: string) => {
 
         <div style={styles.meta}>
           📅 {item.date ? formatDateForDisplay(item.date) : ""}
-{item.time && <> ⏰ {formatTime(item.time)}</>}        </div>
+{item.time ? <> ⏰ {formatTime(item.time)} </> : null}
+</div>
       </div>
     </div>
 
