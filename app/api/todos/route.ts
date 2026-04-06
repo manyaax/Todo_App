@@ -22,14 +22,13 @@ export async function GET(req: Request) {
     };
 
     if (date) {
-      const selected = new Date(date);
-
+      const selected = new Date(date + "T00:00:00");
       // ✅ FORCE SAME FORMAT (VERY IMPORTANT)
       const start = new Date(selected);
-      start.setHours(0, 0, 0, 0);
+      start.setUTCHours(0, 0, 0, 0);
 
       const end = new Date(selected);
-      end.setHours(23, 59, 59, 999);
+      end.setUTCHours(23, 59, 59, 999);
 
       filter.date = {
         $gte: start,
