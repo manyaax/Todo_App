@@ -40,13 +40,21 @@ function extractDate(message: string) {
   const date = new Date();
 
   if (lower.includes("today")) {
-    return date;
-  }
+  const now = new Date();
+
+  // convert to IST manually
+  const ist = new Date(now.getTime() + (5.5 * 60 * 60 * 1000));
+
+  return ist;
+}
 
   if (lower.includes("tomorrow")) {
-    date.setDate(date.getDate() + 1);
-    return date;
-  }
+  const now = new Date();
+  const ist = new Date(now.getTime() + (5.5 * 60 * 60 * 1000));
+
+  ist.setDate(ist.getDate() + 1);
+  return ist;
+}
 
   const match = message.match(/(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})/);
   if (match) {
@@ -82,7 +90,7 @@ export async function POST(req: Request) {
       }
 
       const cleanDate = new Date(parsedDate);
-      cleanDate.setHours(0, 0, 0, 0);
+      cleanDate.setUTCHours(0, 0, 0, 0);
 
       await Todo.create({
         text: task,
@@ -129,7 +137,7 @@ console.log("TIME DETECTED:", timeData);
       if (timeData) {
           cleanDate.setHours(timeData.hours, timeData.minutes, 0, 0);
       }else {
-  cleanDate.setHours(0, 0, 0, 0); // default only if no time
+  cleanDate.setUTCHours(0, 0, 0, 0); // default only if no time
 }
       
       await Todo.create({
